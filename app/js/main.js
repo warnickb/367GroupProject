@@ -4,8 +4,9 @@ import Wheel from './models/Wheel';
 // const OrbitControls = orbit(THREE);
 import TrackballControls from 'three-trackballcontrols';
 
+var hit;
 //car objects
-
+var enemy = new THREE.Mesh();
 
 const landGeom = new THREE.CubeGeometry(500, 50, 400, 40);
 const landMatr = new THREE.MeshBasicMaterial({ color: 0x91ef00 });
@@ -22,21 +23,23 @@ boxMesh.updateMatrix();
 singleGeom.merge(boxMesh.geometry, boxMesh.matrix);
 sphereMesh.updateMatrix();
 singleGeom.merge(sphereMesh.geometry, sphereMesh.matrix);
-const mat = new THREE.MeshPhongMaterial({ color: 0xFFF000 });
+const mat = new THREE.MeshBasicMaterial({ color: 0x000080 });
 const newMesh = new THREE.Mesh(singleGeom, mat);
 
 const trunkGeom = new THREE.CylinderGeometry(8, 8, 10, 10);
 const trunkMatr = new THREE.MeshBasicMaterial({ color: 0x808000 });
 const trunk = new THREE.Mesh(trunkGeom, trunkMatr);
-trunk.position.set(10, -5, 15);
+trunk.position.set(20, -5, 25);
 
 const leafGeom = new THREE.ConeGeometry(15, 35, 15, 15);
 const leafMatr = new THREE.MeshBasicMaterial({ color: 0x008000});
 const leaf = new THREE.Mesh(leafGeom, leafMatr);
-leaf.position.set(10, 13, 15);
+leaf.position.set(20, 13, 25);
 
 const camera = new THREE.PerspectiveCamera(75, 4 / 3, 0.5, 500);
 
+const collidableMeshList = [];
+collidableMeshList.push(trunk, leaf);
 
 export default class App {
     constructor() {
@@ -51,7 +54,7 @@ export default class App {
         //camera = new THREE.PerspectiveCamera(75, 4 / 3, 0.5, 500);
         // Place the camera at (0,0,100)
         camera.position.z = 100;
-
+        this.start = false;
         // const orbiter = new OrbitControls(this.camera);
         // orbiter.enableZoom = false;
         // orbiter.update();
@@ -61,7 +64,22 @@ export default class App {
         this.tracker.noZoom = false;
         this.tracker.noPan = false;
 
-        
+        this.rings = [];
+        for (let i = 0; i < 10; i++) {
+            var tget = new THREE.TorusGeometry(5, 4, 20, 26);
+            var tmat = new THREE.MeshBasicMaterial({ color: 0x00FFFF });
+            enemy = new THREE.Mesh(tget, tmat);
+
+
+
+            var x = Math.floor(Math.random() * (70 - (-65 + 1)) - 65);
+            enemy.position.x = x;
+            var z = Math.floor(Math.random() * (90 - (-90 + 1)) - 90);
+            enemy.position.z = z;
+            enemy.position.y = 7;
+            this.rings[i] = enemy;
+            this.scene.add(enemy);
+        }
 
         //this.scene.add(dodecmesh);
 
@@ -71,7 +89,7 @@ export default class App {
 
         this.scene.add(trunk);
         this.scene.add(leaf);
-
+        this.clock = new THREE.Clock();
         window.addEventListener('keydown', () => this.onDocumentKeyDown(event));
         
 
@@ -89,6 +107,9 @@ export default class App {
         camera.lookAt(newMesh.position);
         camera.updateProjectionMatrix();
         //camera.lookAt(car.position.y);
+        this.collision();
+
+        
     }
 
     resizeHandler() {
@@ -108,19 +129,50 @@ export default class App {
     onDocumentKeyDown(event) {
         if (event.keyCode == 65 || event.keyCode == 37) {
             newMesh.position.x -= 5.0;
+            if (this.start === false) {
+                this.clock.start();
+                this.start = true;
+            }
         }
         else if (event.keyCode == 68 || event.keyCode == 39) {
             newMesh.position.x += 5.0;
+            if (this.start === false) {
+                this.clock.start();
+                this.start = true;
+            }
         }
         else if (event.keyCode == 87 || event.keyCode == 38) {
             newMesh.position.z -= 5.0;
+            if (this.start === false) {
+                this.clock.start();
+                this.start = true;
+            }
         }
         else if (event.keyCode == 83 || event.keyCode == 40) {
             newMesh.position.z += 5.0;
+            if (this.start === false) {
+                this.clock.start();
+                this.start = true;
+            }
         }
         else {
 
         }
+    }
+    collision() {
+        this.rings.forEach((x) => {
+            if (Math.abs(newMesh.position.x - x.position.x) < 15 && Math.abs(newMesh.position.z - x.position.z) < 12) {
+                this.scene.remove(x);
+                this.rings.splice(this.rings.indexOf(x), 1);
+                console.log(this.rings.length);
+                if (this.rings.length == 0) {
+                    this.keyboard = {};
+                    this.clock.stop();
+                    alert("Doughnuts Collected in: " + this.clock.elapsedTime.toString().substring(0, 5) + " Seconds");
+                    
+                }
+            }
+        });
     }
 }
 /*
